@@ -8,7 +8,7 @@ name: standards
   pull_request:
     types: [opened, edited, synchronize, reopened]
   push:
-    branches: [master]
+    branches: [main]
   schedule:
     # `0 9 * * 1` → weekly trufflehog (secret-scan tree-wide entropy scan).
     # `0 8 * * 1` → weekly copier-sync; one hour earlier so a sync PR is open
@@ -103,8 +103,8 @@ jobs:
     # `template/v1` (a `git diff` after `copier update`, ignoring
     # .copier-answers.yml — the same definition copier-sync uses to open a PR,
     # so a red gate always means a sync PR can fix it).
-    #   • push to master → BLOCKING (fails the branch when drifted,
-    #     so master can't be green and releases can't ship while
+    #   • push to main → BLOCKING (fails the branch when drifted,
+    #     so main can't be green and releases can't ship while
     #     behind the template). `[skip-drift-gate]` in the commit message bypasses
     #     (emergency hotfix).
     #   • pull_request → ADVISORY (annotates only, never fails) so in-flight
