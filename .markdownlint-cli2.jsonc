@@ -10,5 +10,16 @@
     "MD060": false,
     "MD036": false
   },
-  "ignores": ["node_modules", ".astro", "dist", "build", "playwright-report", "test-results", "CHANGELOG.md", "README.md", "LICENSE.md", ".github/**"]
+  "ignores": [
+    "node_modules",
+    ".astro",
+    "dist",
+    "build",
+    "playwright-report",
+    "test-results",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE.md",
+    ".github/**"
+  ]
 }
