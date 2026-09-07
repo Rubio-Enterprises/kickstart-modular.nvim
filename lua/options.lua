@@ -38,6 +38,15 @@ vim.o.showmode = false
 --  See `:help 'clipboard'`
 vim.schedule(function() vim.o.clipboard = 'unnamedplus' end)
 
+-- On macOS the provider search returns pbcopy long before it reaches the OSC 52
+-- branch (provider/clipboard.vim:236), so Nvim's automatic "use OSC 52 over
+-- SSH" fallback can never fire on a Mac host -- every yank would land on the
+-- SERVER's pasteboard. Force the OSC 52 provider so the terminal writes the
+-- clipboard of whichever machine is actually running it. See
+-- `:help clipboard-osc52`. SSH_TTY (not SSH_CONNECTION) because it is set only
+-- when a TTY exists, which is exactly when a terminal can receive the sequence.
+if vim.env.SSH_TTY then vim.g.clipboard = 'osc52' end
+
 -- Enable break indent
 vim.o.breakindent = true
 

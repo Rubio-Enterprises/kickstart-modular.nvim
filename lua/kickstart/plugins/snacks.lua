@@ -52,6 +52,22 @@ require('snacks').setup {
       { ':%d+'                              , '' },
       { '%.git$'                            , '' },
     },
+
+    -- `vim.ui.open` hardcodes macOS `open` and never consults $BROWSER, so over
+    -- SSH it launches a browser on the SERVER, where nobody is looking. Put the
+    -- URL on the `+` register instead -- options.lua routes that through OSC 52
+    -- in an SSH session, so it reaches the clipboard of the machine running the
+    -- terminal -- and print it, which Ghostty renders as a cmd-clickable link.
+    -- Local sessions keep the default behaviour.
+    notify = false,
+    open = function(url)
+      if not vim.env.SSH_TTY then
+        vim.ui.open(url)
+        return
+      end
+      vim.fn.setreg('+', url)
+      Snacks.notify(('Copied to local clipboard\n%s'):format(url), { title = 'Git Browse' })
+    end,
   },
 }
 
