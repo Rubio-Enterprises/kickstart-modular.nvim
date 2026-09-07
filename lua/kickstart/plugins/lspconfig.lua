@@ -21,7 +21,13 @@ local function gh(repo) return 'https://github.com/' .. repo end
 --  - and more!
 --
 -- Thus, Language Servers are external tools that must be installed separately from
--- Neovim. This is where `mason` and related plugins come into play.
+-- Neovim. This config does NOT install them: every server below is provisioned by
+-- the dotfiles package registry (`home/.chezmoidata/packages.toml`, category
+-- "core") and resolved from PATH. That registry is the single source of truth for
+-- which binaries exist -- shared with the Claude Code `claude-lsps` plugins and
+-- omp's `~/.omp/agent/lsp.json` -- so a server has exactly one version on this
+-- machine. Mason was removed for that reason: it would install a second,
+-- independently-versioned copy of tooling that is already present.
 --
 -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
 -- and elegantly composed help section, `:help lsp-vs-treesitter`
@@ -98,28 +104,57 @@ vim.api.nvim_create_autocmd('LspAttach', {
   end,
 })
 
--- Enable the following language servers
---  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
+-- Language servers to enable. Keys are `nvim-lspconfig` config names; the value
+-- is a `vim.lsp.Config` override merged over that shipped config (`{}` = take it
+-- as-is). Every binary here is declared in the dotfiles package registry, so
+-- adding a server means adding it there first, not installing it from Neovim.
 --  See `:help lsp-config` for information about keys and how to configure
 ---@type table<string, vim.lsp.Config>
 local servers = {
-  -- clangd = {},
-  -- gopls = {},
-  -- pyright = {},
-  -- rust_analyzer = {},
+  -- Web / config formats
+  -- TypeScript, JavaScript, JSX/TSX.
   --
-  -- Some languages (like typescript) have entire language plugins that can be useful:
-  --    https://github.com/pmizio/typescript-tools.nvim
-  --
-  -- But for many setups, the LSP (`ts_ls`) will work just fine
-  -- ts_ls = {},
+  -- vtsls implements `didRenameFiles` but NOT `willRenameFiles` (vtsls#287), so
+  -- import rewriting happens after the rename, driven by the notification
+  -- snacks.rename sends. tsserver's default for that is `prompt`, which blocks
+  -- on a `window/showMessageRequest` every single time; `always` is what makes
+  -- `<leader>cR` rewrite imports without asking.
+  vtsls = {
+    settings = {
+      typescript = { updateImportsOnFileMove = { enabled = 'always' } },
+      javascript = { updateImportsOnFileMove = { enabled = 'always' } },
+    },
+  },
+  jsonls = {},
+  yamlls = {},
+  marksman = {}, -- Markdown
+  tombi = {}, -- TOML
 
-  stylua = {}, -- Used to format Lua code
+  -- Systems / infra
+  gopls = {},
+  rust_analyzer = {},
+  terraformls = {},
+  bashls = {},
+  regal = {}, -- Rego
+  cue = {},
+
+  -- sourcekit also claims c/cpp/objc/objcpp, not just swift. That is upstream's
+  -- default and is correct on this machine: the C headers here belong to Xcode
+  -- projects, and no clangd is installed to compete for those filetypes.
+  sourcekit = {},
+
+  -- Python is split: pyright owns types, ruff owns lint/format/imports. Ruff's
+  -- hover is disabled below so the two do not both answer `K`.
+  pyright = {},
+  ruff = {
+    on_attach = function(client) client.server_capabilities.hoverProvider = false end,
+  },
 
   -- Special Lua Config, as recommended by neovim help docs
   lua_ls = {
     on_init = function(client)
-      client.server_capabilities.documentFormattingProvider = false -- Disable formatting (formatting is done by stylua)
+      -- Formatting is stylua's job, wired up in conform.lua.
+      client.server_capabilities.documentFormattingProvider = false
 
       if client.workspace_folders then
         local path = client.workspace_folders[1].name
@@ -145,39 +180,36 @@ local servers = {
     ---@type lspconfig.settings.lua_ls
     settings = {
       Lua = {
-        format = { enable = false }, -- Disable formatting (formatting is done by stylua)
+        format = { enable = false }, -- see the note in on_init above
       },
     },
   },
 }
 
-vim.pack.add {
-  gh 'neovim/nvim-lspconfig',
-  gh 'mason-org/mason.nvim',
-  gh 'mason-org/mason-lspconfig.nvim',
-  gh 'WhoIsSethDaniel/mason-tool-installer.nvim',
-}
+vim.pack.add { gh 'neovim/nvim-lspconfig' }
 
--- Automatically install LSPs and related tools to stdpath for Neovim
-require('mason').setup {}
-
--- Ensure the servers and tools above are installed
---
--- To check the current status of installed tools and/or manually install
--- other tools, you can run
---    :Mason
---
--- You can press `g?` for help in this menu.
-local ensure_installed = vim.tbl_keys(servers or {})
-vim.list_extend(ensure_installed, {
-  -- You can add other tools here that you want Mason to install
+-- Nvim's default client capabilities set every `workspace.fileOperations` flag
+-- to false, so servers never register `workspace/willRenameFiles` and a file
+-- rename silently rewrites no imports. Opt in for every server: this is what
+-- makes `<leader>cR` (snacks.rename) actually fix up import paths.
+vim.lsp.config('*', {
+  capabilities = {
+    workspace = {
+      fileOperations = { willRename = true, didRename = true },
+    },
+  },
 })
 
-require('mason-tool-installer').setup { ensure_installed = ensure_installed }
-
+-- Enable only the servers whose binary is actually present. A missing binary
+-- would otherwise fail on every matching buffer; skipping keeps a half-applied
+-- machine quiet instead of noisy, and `:checkhealth lsp` still reports the gap.
 for name, server in pairs(servers) do
-  vim.lsp.config(name, server)
-  vim.lsp.enable(name)
+  local cmd = vim.lsp.config[name] and vim.lsp.config[name].cmd
+  local bin = type(cmd) == 'table' and cmd[1] or nil
+  if bin == nil or vim.fn.executable(bin) == 1 then
+    vim.lsp.config(name, server)
+    vim.lsp.enable(name)
+  end
 end
 
 -- vim: ts=2 sts=2 sw=2 et

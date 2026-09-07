@@ -19,14 +19,29 @@ require('conform').setup {
   default_format_opts = {
     lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
   },
-  -- You can also specify external formatters in here.
+  -- External formatters. Same rule as the language servers: every binary here
+  -- is declared in the dotfiles package registry (`packages.toml`, category
+  -- "core") and resolved from PATH, so the editor formats with the exact
+  -- binaries lefthook runs at commit time. Nothing is installed from Neovim.
+  --
+  -- `stop_after_first` on the JS/TS family: repos here are biome-first, but the
+  -- ones that predate that still carry a prettier config, and running both would
+  -- have the second undo the first.
   formatters_by_ft = {
-    -- rust = { 'rustfmt' },
-    -- Conform can also run multiple formatters sequentially
-    -- python = { "isort", "black" },
-    --
-    -- You can use 'stop_after_first' to run the first available formatter from the list
-    -- javascript = { "prettierd", "prettier", stop_after_first = true },
+    lua = { 'stylua' },
+    python = { 'ruff_format', 'ruff_organize_imports' },
+    sh = { 'shfmt' },
+    bash = { 'shfmt' },
+    javascript = { 'biome', 'prettier', stop_after_first = true },
+    javascriptreact = { 'biome', 'prettier', stop_after_first = true },
+    typescript = { 'biome', 'prettier', stop_after_first = true },
+    typescriptreact = { 'biome', 'prettier', stop_after_first = true },
+    json = { 'biome', 'prettier', stop_after_first = true },
+    jsonc = { 'biome', 'prettier', stop_after_first = true },
+    css = { 'prettier' },
+    html = { 'prettier' },
+    yaml = { 'prettier' },
+    markdown = { 'prettier' },
   },
 }
 
