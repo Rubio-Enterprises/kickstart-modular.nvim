@@ -22,8 +22,37 @@ require('snacks').setup {
   -- Statuscolumn: clean signs, numbers, and clickable folds
   statuscolumn = { enabled = true },
 
-  -- Git integration
-  gitbrowse = { enabled = true },
+  -- Git integration.
+  --
+  -- `gitbrowse` builds the web URL from `git remote -v`, which git prints AFTER
+  -- applying `url.<base>.insteadOf`. The dotfiles rewrite personal-owner repos
+  -- onto the `git@github-personal:` SSH host alias (dual GitHub account key
+  -- selection), so the rewritten remote carries a hostname that does not exist
+  -- on the web. The stored remote is still canonical `github.com`.
+  --
+  -- Map any `git@github-<alias>:` host back to github.com before the URL
+  -- patterns run. `remote_patterns` is a list, so it replaces the default
+  -- wholesale -- the upstream entries are repeated verbatim below the alias rule.
+  gitbrowse = {
+    enabled = true,
+    -- stylua: ignore
+    remote_patterns = {
+      { '^git@github%-[%w_%-]+:(.+)$'       , 'https://github.com/%1' },
+      { '^(https?://.*)%.git$'              , '%1' },
+      { '^git@(.+):(.+)%.git$'              , 'https://%1/%2' },
+      { '^git@(.+):(.+)$'                   , 'https://%1/%2' },
+      { '^git@(.+)/(.+)$'                   , 'https://%1/%2' },
+      { '^org%-%d+@(.+):(.+)%.git$'         , 'https://%1/%2' },
+      { '^ssh://git@(.*)$'                  , 'https://%1' },
+      { '^ssh://([^:/]+)(:%d+)/(.*)$'       , 'https://%1/%3' },
+      { '^ssh://([^/]+)/(.*)$'              , 'https://%1/%2' },
+      { 'ssh%.dev%.azure%.com/v3/(.*)/(.*)$', 'dev.azure.com/%1/_git/%2' },
+      { '^https://%w*@(.*)'                 , 'https://%1' },
+      { '^git@(.*)'                         , 'https://%1' },
+      { ':%d+'                              , '' },
+      { '%.git$'                            , '' },
+    },
+  },
 }
 
 -- [[ Picker Keymaps ]]
