@@ -24,9 +24,8 @@ local function gh(repo) return 'https://github.com/' .. repo end
 -- Neovim. This config does NOT install them: every server below is provisioned by
 -- the dotfiles package registry (`home/.chezmoidata/packages.toml`, category
 -- "core") and resolved from PATH. That registry is the single source of truth for
--- which binaries exist -- shared with the Claude Code `claude-lsps` plugins and
--- omp's `~/.omp/agent/lsp.json` -- so a server has exactly one version on this
--- machine. Mason was removed for that reason: it would install a second,
+-- which binaries exist -- shared with the Claude Code `claude-lsps` plugins --
+-- so a server has exactly one version on this machine. Mason was removed for that reason: it would install a second,
 -- independently-versioned copy of tooling that is already present.
 --
 -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
